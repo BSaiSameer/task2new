@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Cloning') {
+            steps {
+                git 'https://github.com/BSaiSameer/task2new.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''
+                    sudo docker build -t saisasmeer/task2update .
+                '''
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: '87d6010c-d47a-4858-af48-cf47a8cde374',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo "$DOCKER_PASS" | sudo docker login -u "$DOCKER_USER" --password-stdin'
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                sh 'sudo docker push saisasmeer/task2update'
+            }
+        }
+
+        stage('Deploy the Image in Docker Engine') {
+            steps {
+                sh '''
+                    sudo docker rm -f work2 || true
+                    sudo docker run -d --name work2 -p 75:80 saisasmeer/task2update
+                '''
+            }
+        }
+    }
+}
